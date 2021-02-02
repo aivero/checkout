@@ -9,8 +9,9 @@ import * as path from 'path'
 import * as refHelper from './ref-helper'
 import * as stateHelper from './state-helper'
 import * as urlHelper from './url-helper'
-import {IGitCommandManager} from './git-command-manager'
-import {IGitSourceSettings} from './git-source-settings'
+import { IGitCommandManager } from './git-command-manager'
+import { IGitSourceSettings } from './git-source-settings'
+import * as fs from 'fs'
 
 export async function getSource(settings: IGitSourceSettings): Promise<void> {
   // Repository URL
@@ -53,11 +54,7 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
     core.info(
       `To create a local Git repository instead, add Git ${gitCommandManager.MinimumGitVersion} or higher to the PATH`
     )
-    if (settings.submodules) {
-      throw new Error(
-        `Input 'submodules' not supported when falling back to download using the GitHub REST API. To create a local Git repository instead, add Git ${gitCommandManager.MinimumGitVersion} or higher to the PATH.`
-      )
-    } else if (settings.sshKey) {
+    if (settings.sshKey) {
       throw new Error(
         `Input 'ssh-key' not supported when falling back to download using the GitHub REST API. To create a local Git repository instead, add Git ${gitCommandManager.MinimumGitVersion} or higher to the PATH.`
       )
@@ -71,6 +68,25 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
       settings.commit,
       settings.repositoryPath
     )
+
+    if (settings.submodules) {
+      const modules = fs.readFileSync(`${settings.repositoryPath}/.gitmodules`, 'utf8')
+      // TODO: handle multiple submodules
+      const res = modules.match(/\[submodule ".*"]\n *path = (.*)\n *url = git@github\.com:(.*)\/(.*)\.git\n/)
+
+      if (!res) {
+        throw Error("No submodules!")
+      }
+
+      await githubApiHelper.downloadRepository(
+        settings.authToken,
+        res[2],
+        res[3],
+        settings.ref,
+        "",
+        res[1],
+      )
+    }
     return
   }
 
