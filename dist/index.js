@@ -4731,7 +4731,7 @@ function getSource(settings) {
             if (settings.submodules) {
                 const modules = fs.readFileSync(`${settings.repositoryPath}/.gitmodules`, 'utf8');
                 // TODO: handle multiple submodules
-                const res = modules.match(/\[submodule ".*"]\n *path = (.*)\n *url = git@github\.com:(.*)\/(.*)\.git\n/);
+                const res = modules.match(/\[submodule ".*"]\n\tpath = (.*)\n\turl = git@github\.com:(.*)\/(.*)\.git\n/);
                 if (!res) {
                     throw Error("No submodules!");
                 }
