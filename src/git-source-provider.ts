@@ -84,7 +84,7 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
         res[3],
         settings.ref,
         "",
-        res[1],
+        `${settings.repositoryPath}/${res[1]}`,
       )
     }
     return

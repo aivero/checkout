@@ -4735,7 +4735,7 @@ function getSource(settings) {
                 if (!res) {
                     throw Error("No submodules!");
                 }
-                yield githubApiHelper.downloadRepository(settings.authToken, res[2], res[3], settings.ref, "", res[1]);
+                yield githubApiHelper.downloadRepository(settings.authToken, res[2], res[3], settings.ref, "", `${settings.repositoryPath}/${res[1]}`);
             }
             return;
         }
