@@ -70,22 +70,40 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
     )
 
     if (settings.submodules) {
-      const modules = fs.readFileSync(`${settings.repositoryPath}/.gitmodules`, 'utf8')
+      const gitmodulesFile = `${settings.repositoryPath}/.gitmodules`
+      if (!fs.existsSync(gitmodulesFile)) {
+        core.info(`No .gitmodules file`)
+        return;
+      }
+      const modules = fs.readFileSync(gitmodulesFile, 'utf8')
       // TODO: handle multiple submodules
       const res = modules.match(/\[submodule ".*"]\n\tpath = (.*)\n\turl = git@github\.com:(.*)\/(.*)\.git\n/)
 
       if (!res) {
-        throw Error("No submodules!")
+        throw Error("Failed to parse .gitmodules")
       }
 
-      await githubApiHelper.downloadRepository(
-        settings.authToken,
-        res[2],
-        res[3],
-        settings.ref,
-        "",
-        `${settings.repositoryPath}/${res[1]}`,
-      )
+      try {
+        await githubApiHelper.downloadRepository(
+          settings.authToken,
+          res[2],
+          res[3],
+          settings.ref,
+          "",
+          `${settings.repositoryPath}/${res[1]}`,
+        )
+      } catch (error) {
+        core.info(`The branch '${settings.ref}'. Falling back to 'master'.`)
+        await githubApiHelper.downloadRepository(
+          settings.authToken,
+          res[2],
+          res[3],
+          "master",
+          "",
+          `${settings.repositoryPath}/${res[1]}`,
+        )
+      }
+
     }
     return
   }
