@@ -73,37 +73,39 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
       const gitmodulesFile = `${settings.repositoryPath}/.gitmodules`
       if (!fs.existsSync(gitmodulesFile)) {
         core.info(`No .gitmodules file`)
-        return;
+        return
       }
       const modules = fs.readFileSync(gitmodulesFile, 'utf8')
       // TODO: handle multiple submodules
-      const res = modules.match(/\[submodule ".*"]\n\tpath = (.*)\n\turl = git@github\.com:(.*)\/(.*)\.git\n/)
-      core.info(`Parsed .gitmodules into: ${res}`);
-      if (!res) {
-        throw Error("Failed to parse .gitmodules")
+      const submodules = modules.matchAll(
+        /\[submodule ".*"\]\n[\t ]*path = (.*)\n[\t ]*url = git@github\.com:(.*)\/(.*)\.git\n?(?:[\t ]*branch = (.*))?/g
+      )
+      if (!submodules) {
+        throw Error('Failed to parse .gitmodules')
       }
-
-      try {
-        await githubApiHelper.downloadRepository(
-          settings.authToken,
-          res[2],
-          res[3],
-          settings.ref,
-          "",
-          `${settings.repositoryPath}/${res[1]}`,
-        )
-      } catch (error) {
-        core.info(`The branch '${settings.ref}'. Falling back to 'master'.`)
-        await githubApiHelper.downloadRepository(
-          settings.authToken,
-          res[2],
-          res[3],
-          "master",
-          "",
-          `${settings.repositoryPath}/${res[1]}`,
-        )
+      for (const res of submodules) {
+        core.info(`Parsed .gitmodules into: ${res}`)
+        try {
+          await githubApiHelper.downloadRepository(
+            settings.authToken,
+            res[2],
+            res[3],
+            settings.ref,
+            '',
+            `${settings.repositoryPath}/${res[1]}`
+          )
+        } catch (error) {
+          core.info(`The branch '${settings.ref}'. Falling back to 'master'.`)
+          await githubApiHelper.downloadRepository(
+            settings.authToken,
+            res[2],
+            res[3],
+            'master',
+            '',
+            `${settings.repositoryPath}/${res[1]}`
+          )
+        }
       }
-
     }
     return
   }
