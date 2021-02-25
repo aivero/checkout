@@ -78,7 +78,7 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
       const modules = fs.readFileSync(gitmodulesFile, 'utf8')
       // TODO: handle multiple submodules
       const res = modules.match(/\[submodule ".*"]\n\tpath = (.*)\n\turl = git@github\.com:(.*)\/(.*)\.git\n/)
-
+      core.info(`Parsed .gitmodules into: ${res}`);
       if (!res) {
         throw Error("Failed to parse .gitmodules")
       }
